@@ -12,11 +12,11 @@ app.use(bodyParser.json());
 
 
 const dbConfig = {
-  host: process.env.DB_HOST || '6.tcp.ngrok.io',
+  host: process.env.DB_HOST || '4.tcp.ngrok.io',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'bd2',
-  port: process.env.DB_PORT || 17124, // Cambia 1143941782 por el número de puerto de la base de datos que desees.
+  port: process.env.DB_PORT || 10430, // Cambia 1143941782 por el número de puerto de la base de datos que desees.
 };
 const connection = mysql.createConnection(dbConfig);
 connection.connect((err) => {
@@ -241,7 +241,7 @@ app.put('/api/editarSolicitud/:id', (req, res) => {
 
 //
 
-app.post('/api/insertRespuestas/:id', verifyToken, (req, res) => {
+app.post('/api/insertRespuestas/:id', (req, res) => {
   const idSolicitudParam = req.params.id;
   const { respuesta, estado } = req.body;
 
@@ -272,7 +272,7 @@ app.post('/api/insertRespuestas/:id', verifyToken, (req, res) => {
 //REGISTRAR
 // index.js (o tu archivo principal del backend)
 // Resto del código...
-app.post('/api/solicitudes', verifyToken, (req, res) => {
+app.post('/api/solicitudes', (req, res) => {
   const { nombre, motivo, fecha, semestre, id_estudiante} = req.body;
 
   // Realiza la inserción en la tabla "solicitudes"
@@ -289,8 +289,8 @@ app.post('/api/solicitudes', verifyToken, (req, res) => {
 
 // Resto del código...
 // Backend
-app.get('/api/consultaSolicitud/', (req, res) => {
-  const query = 'SELECT * FROM solicitudes'; // Obtener todas las solicitudes
+app.get('/api/consultaSolicitud/:id', (req, res) => {
+  const query = 'SELECT * FROM solicitudes where id=?'; // Obtener todas las solicitudes
   connection.query(query, (err, results) => {
     if (err) {
       console.error('Error en la consulta a la base de datos:', err);
@@ -343,6 +343,33 @@ app.put('/api/consultaSolicitud/', (req, res) => {
     res.json({ message: 'Consulta actualizada exitosamente' });
   });
 });
+
+app.get('/api/consultaEstados/:id', (req, res) => {
+
+  const consultaId = req.params.id;
+  const getConsultaQuery = 'SELECT * FROM consulta WHERE consulta_id = ?';
+  
+  connection.query(getConsultaQuery, [consultaId], (err, results) => {
+    if (err) {
+      console.error('Error en la consulta a la base de datos:', err);
+      return res.status(500).json({ error: 'Error en el servidor' });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'No se encontró la consulta con el id proporcionado' });
+    }
+
+    // Devolver la consulta encontrada como respuesta
+    res.json(results);
+  });
+});
+
+
+
+
+
+
+
 
 app.post('/api/refresh-token', (req, res) => {
   // Obten el token actual de la cabecera "Authorization"

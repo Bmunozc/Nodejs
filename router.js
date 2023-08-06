@@ -40,7 +40,7 @@ router.post('/sign-up', userMiddleware.validateRegister, (req, res, next) => {
               });
             } else {
               db.query(
-                'INSERT INTO users (id, username, password, registered) VALUES (?, ?, ?, now());',
+                'INSERT INTO usuarios (email, password) VALUES (?, ?, now());',
                 [uuid.v4(), req.body.username, hash],
                 (err, result) => {
                   if (err) {
@@ -64,8 +64,8 @@ router.post('/sign-up', userMiddleware.validateRegister, (req, res, next) => {
 
 router.post('/login', (req, res, next) => {
   db.query(
-    `SELECT * FROM users WHERE username = ?;`,
-    [req.body.username],
+    `SELECT * FROM usuarios WHERE email = ?;`,
+    [req.body.email],
     (err, result) => {
       if (err) {
         return res.status(400).send({
