@@ -28,6 +28,21 @@ connection.connect((err) => {
 });
 
 
+
+app.get('/api/consultadeSolicitudes', (req, res) => {
+  const idEstudiante = req.params.id_estudiante; // Obtener el id_estudiante del parámetro de la URL
+  const query = 'SELECT * FROM solicitudes'; // Filtrar por id_estudiante
+  connection.query(query, [idEstudiante], (err, results) => {
+    if (err) {
+      console.error('Error en la consulta a la base de datos:', err);
+      return res.status(500).json({ error: 'Error en el servidor' });
+    }
+
+    // Si no hay errores, envía los resultados como respuesta al cliente
+    res.json(results);
+  });
+});
+
 app.get('/api/consultaSolicitud/:id_estudiante', (req, res) => {
   const idEstudiante = req.params.id_estudiante; // Obtener el id_estudiante del parámetro de la URL
   const query = 'SELECT * FROM solicitudes WHERE id_estudiante = ?'; // Filtrar por id_estudiante
