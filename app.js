@@ -1,3 +1,4 @@
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
@@ -12,11 +13,11 @@ app.use(bodyParser.json());
 
 
 const dbConfig = {
-  host: process.env.DB_HOST || '4.tcp.ngrok.io',
+  host: process.env.DB_HOST || '2.tcp.ngrok.io',
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'bd2',
-  port: process.env.DB_PORT || 10430, // Cambia 1143941782 por el número de puerto de la base de datos que desees.
+  port: process.env.DB_PORT || 17627, // Cambia 1143941782 por el número de puerto de la base de datos que desees.
 };
 const connection = mysql.createConnection(dbConfig);
 connection.connect((err) => {
@@ -255,7 +256,6 @@ app.put('/api/editarSolicitud/:id', (req, res) => {
 });
 
 //
-
 app.post('/api/insertRespuestas/:id', (req, res) => {
   const idSolicitudParam = req.params.id;
   const { respuesta, estado } = req.body;
@@ -268,17 +268,34 @@ app.post('/api/insertRespuestas/:id', (req, res) => {
     return res.status(400).json({ error: 'ID de la solicitud no proporcionado en la ruta' });
   }
 
-  // Realiza la inserción en la tabla "consulta"
-  const query = 'INSERT INTO consulta (respuesta, estado, consulta_id) VALUES (?, ?, ?)';
-  connection.query(query, [respuesta, estado, consulta_id], (err, results) => {
+  // Realiza una consulta para obtener el ID del estudiante y luego realizar la inserción
+  const getStudentIdQuery = 'SELECT id_estudiante FROM solicitudes WHERE id = ?';
+
+  connection.query(getStudentIdQuery, [consulta_id], (err, results) => {
     if (err) {
-      console.error('Error al insertar la solicitud en la base de datos:', err);
+      console.error('Error al obtener el ID del estudiante:', err);
       return res.status(500).json({ error: 'Error en el servidor' });
     }
 
-    return res.json({ message: 'Solicitud insertada exitosamente' });
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Solicitud no encontrada' });
+    }
+
+    const id_estudiante = results[0].id_estudiante;
+
+    // Realiza la inserción en la tabla "consulta" con el ID del estudiante
+    const insertQuery = 'INSERT INTO consulta (respuesta, estado, consulta_id, id_estudiante) VALUES (?, ?, ?, ?)';
+    connection.query(insertQuery, [respuesta, estado, consulta_id, id_estudiante], (err, results) => {
+      if (err) {
+        console.error('Error al insertar la solicitud en la base de datos:', err);
+        return res.status(500).json({ error: 'Error en el servidor' });
+      }
+
+      return res.json({ message: 'Solicitud insertada exitosamente' });
+    });
   });
 });
+
 
 
 
@@ -291,7 +308,7 @@ app.post('/api/solicitudes', (req, res) => {
   const { nombre, motivo, fecha, semestre, id_estudiante} = req.body;
 
   // Realiza la inserción en la tabla "solicitudes"
-  const query = 'INSERT INTO solicitudes (nombre, motivo, fecha, semestre,id_estudiante) VALUES (?, ?, ?, ?,?)';
+  const query = 'INSERT INTO solicitudes (nombre, motivo, estado, fecha, semestre,id_estudiante) VALUES (?, ?, ?, ?,?,?)';
   connection.query(query, [nombre, motivo, fecha, semestre,id_estudiante], (err, results) => {
     if (err) {
       console.error('Error al insertar la solicitud en la base de datos:', err);
@@ -305,8 +322,17 @@ app.post('/api/solicitudes', (req, res) => {
 // Resto del código...
 // Backend
 app.get('/api/consultaSolicitud/:id', (req, res) => {
-  const query = 'SELECT * FROM solicitudes where id=?'; // Obtener todas las solicitudes
-  connection.query(query, (err, results) => {
+  const idEstudiante = req.params.id;
+
+  // Realiza una consulta para obtener el estado de la tabla "consulta" basado en el id_estudiante
+  const query = `
+    SELECT estado 
+    FROM consulta
+    LEFT JOIN consulta c ON s.id = c.consulta_id
+    WHERE s.id_estudiante = ?
+  `;
+
+  connection.query(query, [idEstudiante], (err, results) => {
     if (err) {
       console.error('Error en la consulta a la base de datos:', err);
       return res.status(500).json({ error: 'Error en el servidor' });
@@ -316,6 +342,7 @@ app.get('/api/consultaSolicitud/:id', (req, res) => {
     res.json(results);
   });
 });
+
 
 app.get('/api/consultaSolicitud1/:id', (req, res) => {
   const idSolicitudParam = req.query.id; // Obtener el id de solicitud desde el parámetro de consulta
@@ -359,23 +386,24 @@ app.put('/api/consultaSolicitud/', (req, res) => {
   });
 });
 
-app.get('/api/consultaEstados/:id', (req, res) => {
-
+app.get('/api/consultaEstados/:id/:otro_id', (req, res) => {
   const consultaId = req.params.id;
-  const getConsultaQuery = 'SELECT * FROM consulta WHERE consulta_id = ?';
-  
-  connection.query(getConsultaQuery, [consultaId], (err, results) => {
+  const otroId = req.params.otro_id;
+
+  const getConsultaQuery = 'SELECT id, estado FROM consulta WHERE consulta_id = ? AND id_estudiante = ?';
+
+  connection.query(getConsultaQuery, [consultaId, otroId], (err, results) => {
     if (err) {
       console.error('Error en la consulta a la base de datos:', err);
       return res.status(500).json({ error: 'Error en el servidor' });
     }
 
     if (results.length === 0) {
-      return res.status(404).json({ error: 'No se encontró la consulta con el id proporcionado' });
+      return res.status(404).json({ error: 'No se encontró la consulta con los ids proporcionados' });
     }
 
     // Devolver la consulta encontrada como respuesta
-    res.json(results);
+    res.json(results[0]);
   });
 });
 
