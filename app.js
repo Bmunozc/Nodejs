@@ -17,7 +17,7 @@ const dbConfig = {
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'bd2',
-  port: process.env.DB_PORT || 17627, // Cambia 1143941782 por el número de puerto de la base de datos que desees.
+  port: process.env.DB_PORT || 10085, // Cambia 1143941782 por el número de puerto de la base de datos que desees.
 };
 const connection = mysql.createConnection(dbConfig);
 connection.connect((err) => {
