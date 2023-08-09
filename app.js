@@ -308,12 +308,14 @@ app.post('/api/solicitudes', (req, res) => {
   const { nombre, motivo, fecha, semestre, id_estudiante} = req.body;
 
   // Realiza la inserción en la tabla "solicitudes"
-  const query = 'INSERT INTO solicitudes (nombre, motivo, estado, fecha, semestre,id_estudiante) VALUES (?, ?, ?, ?,?,?)';
+  const query = 'INSERT INTO solicitudes (nombre, motivo, fecha, semestre,id_estudiante) VALUES (?, ?, ?, ?,?)';
+  const values = [nombre, motivo, fecha, semestre, id_estudiante];
+
   connection.query(query, [nombre, motivo, fecha, semestre,id_estudiante], (err, results) => {
     if (err) {
       console.error('Error al insertar la solicitud en la base de datos:', err);
       return res.status(500).json({ error: 'Error en el servidor' });
-    }
+    } 
 
     return res.json({ message: 'Solicitud insertada exitosamente' });
   });
@@ -347,7 +349,7 @@ app.get('/api/consultaSolicitud/:id', (req, res) => {
 app.get('/api/consultaSolicitud1/:id', (req, res) => {
   const idSolicitudParam = req.query.id; // Obtener el id de solicitud desde el parámetro de consulta
 
-  const getSolicitudQuery = 'SELECT * FROM solicitudes WHERE id = ?';
+  const getSolicitudQuery = 'SELECT * FROM solicitudes WHERE id_estudiante = ?';
   connection.query(getSolicitudQuery, [idSolicitudParam], (err, results) => {
     if (err) {
       console.error('Error en la consulta a la base de datos:', err);
@@ -403,7 +405,7 @@ app.get('/api/consultaEstados/:id/:otro_id', (req, res) => {
     }
 
     // Devolver la consulta encontrada como respuesta
-    res.json(results[0]);
+    res.json(results);
   });
 });
 
